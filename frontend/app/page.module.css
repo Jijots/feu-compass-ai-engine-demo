@@ -1,97 +1,313 @@
 .page {
   min-height: 100vh;
-  padding: 3rem 1.5rem;
+  padding: 2.5rem 1.5rem 5rem;
   display: flex;
   justify-content: center;
-  background: #0b0d10;
-  color: #e6e6e6;
 }
 
 .main {
   width: 100%;
-  max-width: 640px;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+  max-width: 860px;
+}
+
+/* ── Page header (matches assets/index.blade.php's page-header pattern) ── */
+.header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.overline {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin: 0 0 0.25rem;
 }
 
 .title {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #0f172a;
   margin: 0;
+  line-height: 1.15;
 }
 
 .subtitle {
-  color: #a0a6ad;
-  margin: 0;
-  line-height: 1.5;
+  font-size: 0.9375rem;
+  color: #64748b;
+  font-weight: 500;
+  margin: 0.375rem 0 0;
 }
 
+/* ── Health badge ── */
 .healthBadge {
-  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
-.badgeUp {
-  color: #3fb950;
+.healthUp {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
 }
 
-.badgeDown {
-  color: #f85149;
+.healthDown {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
-.badgeDown code {
-  background: #1c1f24;
-  padding: 0.1rem 0.35rem;
+.healthDown code {
+  background: rgba(185, 28, 28, 0.08);
+  padding: 0.05rem 0.35rem;
   border-radius: 4px;
 }
 
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* ── Upload form ── */
 .form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  background: #14171a;
-  border: 1px solid #262b31;
-  border-radius: 12px;
-  padding: 1.5rem;
+  background: var(--surface-card);
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 2rem;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  font-size: 0.9rem;
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
 }
 
-.field input[type="file"] {
-  color: #e6e6e6;
-  font-size: 0.85rem;
+@media (max-width: 640px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.button {
-  align-self: flex-start;
-  background: #2f81f7;
+.fieldLabel {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 0.5rem;
+}
+
+.dropzone {
+  border: 3px dashed #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.dropzone:hover {
+  border-color: var(--feu-green);
+}
+
+.dropzoneActive {
+  border-color: var(--feu-green);
+  background: #f0fdf4;
+}
+
+.dropzone input {
+  display: none;
+}
+
+.previewImg {
+  width: 100%;
+  max-height: 120px;
+  object-fit: contain;
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  padding: 0.25rem;
+}
+
+.dropzoneIcon {
+  color: #94a3b8;
+  margin-bottom: 0.35rem;
+}
+
+.dropzoneText {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.dropzoneHint {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+  margin-top: 0.15rem;
+}
+
+.submitBtn {
+  margin-top: 1.5rem;
+  width: 100%;
+  padding: 0.85rem 1.5rem;
+  background: var(--feu-green);
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 0.65rem 1.4rem;
-  font-size: 0.95rem;
-  font-weight: 600;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
-.button:disabled {
-  background: #3a3f45;
+.submitBtn:hover:not(:disabled) {
+  background: var(--feu-green-dark);
+  transform: translateY(-1px);
+}
+
+.submitBtn:disabled {
+  background: #cbd5e1;
   cursor: not-allowed;
 }
 
 .error {
-  color: #f85149;
-  font-size: 0.9rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
-.results h2 {
+/* ── Score explanation panel (dark slate card, matches matches.blade.php) ── */
+.scorePanel {
+  background: #0f172a;
+  border-radius: 16px;
+  padding: 1.5rem;
+  color: white;
+  margin-bottom: 2rem;
+}
+
+.scorePanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+.scorePanelTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.scorePanelBadge {
+  font-size: 0.8125rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--feu-gold);
+}
+
+.chevron {
+  transition: transform 0.2s ease;
+  color: #94a3b8;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.scorePanelBody {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #334155;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .scorePanelBody {
+    grid-template-columns: 1fr;
+  }
+}
+
+.scoreStep {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.scoreStepLabel {
+  color: var(--feu-gold);
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.5rem;
+}
+
+.scoreStepBody {
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.scoreLegend {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+.legendPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* ── Results ── */
+.resultsHeading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1.1rem;
-  margin-bottom: 0.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1rem;
 }
 
 .resultList {
@@ -100,36 +316,99 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .resultCard {
-  background: #14171a;
-  border: 1px solid #262b31;
-  border-radius: 10px;
-  padding: 1rem;
+  position: relative;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
-.resultHeader {
+.resultStripe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+}
+
+.resultTop {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.35rem;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
 }
 
-.filename {
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.score {
+.rankBadge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--feu-green);
+  color: white;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.breakdown {
-  color: #a0a6ad;
+.scoreBadge {
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 2px solid;
+}
+
+.filenameLabel {
   font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.insightBox {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.insightLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.3rem;
+}
+
+.insightText {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  font-style: italic;
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.5;
+}
+
+.emptyState {
+  background: white;
+  border: 2px dashed #cbd5e1;
+  border-radius: 20px;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: #64748b;
 }
