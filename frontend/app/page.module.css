@@ -1,0 +1,135 @@
+.page {
+  min-height: 100vh;
+  padding: 3rem 1.5rem;
+  display: flex;
+  justify-content: center;
+  background: #0b0d10;
+  color: #e6e6e6;
+}
+
+.main {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.subtitle {
+  color: #a0a6ad;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.healthBadge {
+  font-size: 0.85rem;
+}
+
+.badgeUp {
+  color: #3fb950;
+}
+
+.badgeDown {
+  color: #f85149;
+}
+
+.badgeDown code {
+  background: #1c1f24;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: #14171a;
+  border: 1px solid #262b31;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.field input[type="file"] {
+  color: #e6e6e6;
+  font-size: 0.85rem;
+}
+
+.button {
+  align-self: flex-start;
+  background: #2f81f7;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem 1.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:disabled {
+  background: #3a3f45;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #f85149;
+  font-size: 0.9rem;
+}
+
+.results h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+}
+
+.resultList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.resultCard {
+  background: #14171a;
+  border: 1px solid #262b31;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.resultHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.filename {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.score {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.breakdown {
+  color: #a0a6ad;
+  font-size: 0.85rem;
+  margin: 0;
+  line-height: 1.4;
+}

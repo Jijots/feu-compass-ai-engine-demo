@@ -6,3 +6,10 @@ __pycache__/
 venv/
 demo/sample_images/*
 !demo/sample_images/.gitkeep
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+

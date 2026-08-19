@@ -9,3 +9,4 @@ open-clip-torch
 torch
 python-dotenv
 requests
+python-multipart

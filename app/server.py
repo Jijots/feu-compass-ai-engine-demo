@@ -23,6 +23,9 @@ Two matching modes:
 
   GET  /health      Liveness check.
 
+A small React/TypeScript/Next.js frontend in ../frontend calls /match-upload
+directly from the browser — see the repo README for how to run both.
+
 Run it:
   pip install -r requirements.txt
   cp .env.example .env        # add your own GOOGLE_API_KEY if you want Tier 3
@@ -40,7 +43,8 @@ import warnings
 
 import cv2
 import numpy as np
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from dotenv import load_dotenv
@@ -139,6 +143,19 @@ if REMBG_AVAILABLE:
         REMBG_SESSION = None
 
 app = FastAPI(title="FEU-COMPASS AI Engine (demo)")
+
+# Local-dev CORS — the Next.js frontend (localhost:3000) calls this API
+# (localhost:8001) directly from the browser. Wide open here since this is a
+# demo running on your own machine, not a deployed multi-tenant service.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+UPLOAD_DIR = os.path.join(BASE_DIR, ".cache", "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 print(
     f"[matcher] OpenCV {cv2.__version__} | "
@@ -652,6 +669,41 @@ def match(req: MatchRequest):
 def semantic(req: SemanticRequest):
     students = [s.model_dump() for s in req.students]
     return _process_semantic(req.image_path, students, req.id_hint or "")
+
+
+def _save_upload(upload: UploadFile) -> str:
+    """Persist an uploaded file to disk and return its path — the scoring
+    pipeline below (shared with /match) works off file paths, same as the
+    production Laravel integration did."""
+    digest = hashlib.md5((upload.filename or "upload").encode()).hexdigest()
+    ext = os.path.splitext(upload.filename or "")[1] or ".jpg"
+    dest = os.path.join(UPLOAD_DIR, f"{digest}_{int(time.time()*1000)}{ext}")
+    with open(dest, "wb") as f:
+        f.write(upload.file.read())
+    return dest
+
+
+@app.post("/match-upload")
+async def match_upload(target: UploadFile = File(...), candidates: List[UploadFile] = File(...)):
+    """Browser-friendly version of /match — takes real file uploads instead
+    of server-side paths, so the frontend can send images straight from a
+    file picker without anything needing to already exist on disk."""
+    target_path = _save_upload(target)
+    database_items = []
+    for i, c in enumerate(candidates):
+        c_path = _save_upload(c)
+        database_items.append({"id": i, "image_path": c_path, "filename": c.filename})
+
+    result = _process_batch(target_path, database_items)
+
+    # Attach original filenames to the response so the UI can show them
+    # instead of opaque numeric IDs.
+    if not result.get("error") and result.get("matches"):
+        by_id = {item["id"]: item["filename"] for item in database_items}
+        for m in result["matches"]:
+            m["filename"] = by_id.get(m["item_id"], "unknown")
+
+    return result
 
 
 if __name__ == "__main__":

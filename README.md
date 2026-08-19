@@ -70,7 +70,7 @@ The visual matcher and Tiers 1-2 of the semantic matcher work with **zero
 API keys** — pure OpenCV and Tesseract. Gemini is only needed for the Tier 3
 fallback.
 
-Then, in another terminal:
+Then, in another terminal, either the CLI demo:
 
 ```bash
 python demo/run_demo.py --target demo/sample_images/lost.jpg \
@@ -82,12 +82,28 @@ to try it against something real. Any two photos of the same object from
 different angles, plus a couple of decoys, work well for seeing the scoring
 in action.)
 
+...or the web UI:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Then open `http://localhost:3000` (or whatever port it prints — it'll pick
+the next free one if 3000 is taken), upload a target photo and one or more
+candidate photos through the file pickers, and it calls the backend directly
+from the browser. Built with **React + TypeScript + Next.js** (App Router).
+The frontend talks to `http://127.0.0.1:8001` by default; see
+`frontend/.env.local.example` if you're running the backend somewhere else.
+
 ## API reference
 
 | Endpoint | Method | Purpose |
 |---|---|---|
 | `/health` | GET | Liveness check, reports which optional features (Tesseract/Gemini/CLIP/rembg) are actually available |
-| `/match` | POST | Score a target image against a batch of candidates, returns top 5 by confidence |
+| `/match` | POST | Score a target image against a batch of candidates (server-side file paths), returns top 5 by confidence |
+| `/match-upload` | POST | Same as `/match`, but takes real multipart file uploads — what the web UI calls |
 | `/precompute` | POST | Pre-compute and cache SIFT/CLIP descriptors for an image ahead of time |
 | `/semantic` | POST | 3-tier identity match for a presented document against a list of known students |
 
