@@ -429,113 +429,204 @@ function DiagMeaning() {
   );
 }
 
-type Stage = {
-  num: string;
+type StageVoice = {
   role: string;
   name: string;
-  analogy: React.ReactNode;
-  specs: Array<[string, React.ReactNode]>;
-  diagram: React.ReactNode;
+  body: React.ReactNode;
   caption: string;
+};
+
+type Stage = {
+  num: string;
+  diagram: React.ReactNode;
+  /* The engineering account: what the code does, with the numbers. */
+  technical: StageVoice & { specs: Array<[string, React.ReactNode]> };
+  /* The same five steps told as finding a constellation. Every image maps
+     onto something real: stars are keypoints, the arrangement is the
+     geometric check, and a starless haze is the featureless object CLIP
+     exists to handle. */
+  simple: StageVoice;
 };
 
 const STAGES: Stage[] = [
   {
     num: "01",
-    role: "Prepare",
-    name: "Put both photos on equal terms",
-    analogy: (
-      <>
-        Before comparing two handwriting samples you photocopy both at the same size under the same
-        lamp. <em>Whatever still differs afterwards is a real difference</em>, not a difference in the
-        photography.
-      </>
-    ),
-    specs: [
-      ["Resize", <>Longest edge capped at <code>800px</code>, area-averaged.</>],
-      ["Contrast", <>CLAHE over the grayscale copy, <code>clipLimit 4.0</code>, <code>8x8</code> tiles.</>],
-      ["Effect", <>A shot taken in a dim corridor and one under office fluorescents present comparable texture.</>],
-    ],
     diagram: <DiagNormalise />,
-    caption: "unequal input, common footing",
+    technical: {
+      role: "Prepare",
+      name: "Put both photos on equal terms",
+      caption: "unequal input, common footing",
+      body: (
+        <>
+          Before comparing two handwriting samples you photocopy both at the same
+          size under the same lamp. <em>Whatever still differs afterwards is a
+          real difference</em>, not a difference in the photography.
+        </>
+      ),
+      specs: [
+        ["Resize", <>Longest edge capped at <code>800px</code>, area-averaged.</>],
+        ["Contrast", <>CLAHE over the grayscale copy, <code>clipLimit 4.0</code>, <code>8x8</code> tiles.</>],
+        ["Effect", <>A shot taken in a dim corridor and one under office fluorescents present comparable texture.</>],
+      ],
+    },
+    simple: {
+      role: "First",
+      name: "Draw both charts the same way",
+      caption: "two sketches, one scale",
+      body: (
+        <>
+          Two people sketch the same patch of sky. One used a big sheet under a
+          bright lamp, the other a small sheet in the dark. Before the sketches
+          can be compared at all, you redraw both at one size and one brightness.{" "}
+          <em>Whatever still looks different after that is genuinely different</em>,
+          and not just a difference in the drawing.
+        </>
+      ),
+    },
   },
   {
     num: "02",
-    role: "Isolate",
-    name: "Cut the item out of its background",
-    analogy: (
-      <>
-        Take scissors to the photo and keep only the item. <em>The desk it was sitting on is not
-        evidence.</em> Two photos of the same bottle on different tables should not be punished for
-        the tables.
-      </>
-    ),
-    specs: [
-      ["Matte", <>u2netp, 4.6 MB, run directly on ONNX Runtime.</>],
-      ["Cleanup", <>Threshold at <code>128</code>, then morphological close x2 and open x1 with a 5x5 ellipse.</>],
-      ["Fallback", <>A mask covering under <code>3%</code> of the frame is rejected. GrabCut takes over with a 10% inset rectangle over 3 iterations; failing that, the frame is scored unmasked.</>],
-    ],
     diagram: <DiagIsolate />,
-    caption: "subject lifted from clutter",
+    technical: {
+      role: "Isolate",
+      name: "Cut the item out of its background",
+      caption: "subject lifted from clutter",
+      body: (
+        <>
+          Take scissors to the photo and keep only the item. <em>The desk it was
+          sitting on is not evidence.</em> Two photos of the same bottle on
+          different tables should not be punished for the tables.
+        </>
+      ),
+      specs: [
+        ["Matte", <>u2netp, 4.6 MB, run directly on ONNX Runtime.</>],
+        ["Cleanup", <>Threshold at <code>128</code>, then morphological close x2 and open x1 with a 5x5 ellipse.</>],
+        ["Fallback", <>A mask covering under <code>3%</code> of the frame is rejected. GrabCut takes over with a 10% inset rectangle over 3 iterations; failing that, the frame is scored unmasked.</>],
+      ],
+    },
+    simple: {
+      role: "Then",
+      name: "Ignore the streetlights",
+      caption: "glow removed, stars kept",
+      body: (
+        <>
+          A photo of the sky taken downtown is full of orange glow that has
+          nothing to do with stars. You cut the glow away and keep only what is
+          actually up there. <em>Otherwise the same constellation shot from a car
+          park and from a dark field would look like two different skies</em>,
+          when the only thing that changed was the ground underneath.
+        </>
+      ),
+    },
   },
   {
     num: "03",
-    role: "Describe",
-    name: "Take the item's fingerprint",
-    analogy: (
-      <>
-        Not a photograph. A constellation. The engine records distinctive corners and textures and how
-        they sit relative to one another, so <em>the pattern survives being rotated, resized or lit
-        differently</em>.
-      </>
-    ),
-    specs: [
-      ["Detector", <>SIFT, up to <code>2500</code> keypoints per image.</>],
-      ["Descriptor", <>RootSIFT: L1-normalise each descriptor, then take its square root.</>],
-      ["Why", <>That turns ordinary Euclidean distance into the Hellinger kernel, which measurably improves matching and costs nothing at runtime.</>],
-    ],
     diagram: <DiagFingerprint />,
-    caption: "keypoints with scale and orientation",
+    technical: {
+      role: "Describe",
+      name: "Take the item's fingerprint",
+      caption: "keypoints with scale and orientation",
+      body: (
+        <>
+          Not a photograph. A constellation. The engine records distinctive
+          corners and textures and how they sit relative to one another, so{" "}
+          <em>the pattern survives being rotated, resized or lit differently</em>.
+        </>
+      ),
+      specs: [
+        ["Detector", <>SIFT, up to <code>2500</code> keypoints per image.</>],
+        ["Descriptor", <>RootSIFT: L1-normalise each descriptor, then take its square root.</>],
+        ["Why", <>That turns ordinary Euclidean distance into the Hellinger kernel, which measurably improves matching and costs nothing at runtime.</>],
+      ],
+    },
+    simple: {
+      role: "Then",
+      name: "Mark the bright stars",
+      caption: "which stars, and how far apart",
+      body: (
+        <>
+          Nobody memorises a constellation as a picture. You remember which stars
+          are the bright ones and how far apart they sit. <em>That is why you can
+          still pick out Orion when it is upside down, low on the horizon, or half
+          behind a cloud</em>, even though it looks nothing like the diagram in the
+          book.
+        </>
+      ),
+    },
   },
   {
     num: "04",
-    role: "Verify",
-    name: "Make the matches corroborate each other",
-    analogy: (
-      <>
-        Two witnesses agreeing on details is weak, since anyone can share details by coincidence. Two
-        witnesses agreeing on <em>where those details sit relative to one another</em> is a story.
-        This stage discards the coincidences and keeps only matches that agree on one consistent
-        geometry.
-      </>
-    ),
-    specs: [
-      ["Pairing", <>FLANN, KD-tree, <code>5</code> trees, <code>50</code> checks.</>],
-      ["Filter", <>Lowe ratio test: keep a pair only when the best match is under <code>0.75x</code> the distance of the second best.</>],
-      ["Geometry", <>With 10 or more survivors, USAC_MAGSAC fits a homography at <code>5.0px</code> reprojection tolerance.</>],
-      ["Verdict", <>Inlier ratio at or above <code>0.50</code> with 8+ inliers scores 90. At <code>0.35</code>, 80. At <code>0.20</code> with 3+, it blends 65 against an 8x8x8 BGR histogram correlation, 60/40.</>],
-    ],
     diagram: <DiagCorroborate />,
-    caption: "geometry separates signal from coincidence",
+    technical: {
+      role: "Verify",
+      name: "Make the matches corroborate each other",
+      caption: "geometry separates signal from coincidence",
+      body: (
+        <>
+          Two witnesses agreeing on details is weak, since anyone can share details
+          by coincidence. Two witnesses agreeing on <em>where those details sit
+          relative to one another</em> is a story. This stage discards the
+          coincidences and keeps only matches that agree on one consistent
+          geometry.
+        </>
+      ),
+      specs: [
+        ["Pairing", <>FLANN, KD-tree, <code>5</code> trees, <code>50</code> checks.</>],
+        ["Filter", <>Lowe ratio test: keep a pair only when the best match is under <code>0.75x</code> the distance of the second best.</>],
+        ["Geometry", <>With 10 or more survivors, USAC_MAGSAC fits a homography at <code>5.0px</code> reprojection tolerance.</>],
+        ["Verdict", <>Inlier ratio at or above <code>0.50</code> with 8+ inliers scores 90. At <code>0.35</code>, 80. At <code>0.20</code> with 3+, it blends 65 against an 8x8x8 BGR histogram correlation, 60/40.</>],
+      ],
+    },
+    simple: {
+      role: "Then",
+      name: "The shape has to agree",
+      caption: "same stars, same arrangement",
+      body: (
+        <>
+          Two charts sharing a few bright stars proves nothing, because the sky is
+          full of bright stars. It is only Orion when the same stars sit in the
+          same arrangement, at the same distances and the same angles.{" "}
+          <em>Every star that does not fit the shape gets thrown out</em>, and what
+          survives is either a real match or nothing at all.
+        </>
+      ),
+    },
   },
   {
     num: "05",
-    role: "Only when 04 falls short",
-    name: "Fall back to meaning",
-    analogy: (
-      <>
-        A plain white earbud case has almost no fingerprint to read. There are barely any corners to
-        record. So the question changes from <em>do these pixels line up</em> to <em>what is this a
-        picture of</em>, and a different kind of model answers the second one.
-      </>
-    ),
-    specs: [
-      ["Trigger", <>Runs only when the classical score lands below <code>80</code>.</>],
-      ["Model", <>CLIP ViT-B/32 vision tower, int8 ONNX, 97 MB, producing a 512-dimensional embedding.</>],
-      ["Verdict", <>Cosine at or above <code>0.90</code> scores 90. At <code>0.82</code>, 82. At <code>0.75</code>, 76. Below that, cosine x 70.</>],
-    ],
     diagram: <DiagMeaning />,
-    caption: "similarity as an angle, not an overlap",
+    technical: {
+      role: "Only when 04 falls short",
+      name: "Fall back to meaning",
+      caption: "similarity as an angle, not an overlap",
+      body: (
+        <>
+          A plain white earbud case has almost no fingerprint to read. There are
+          barely any corners to record. So the question changes from <em>do these
+          pixels line up</em> to <em>what is this a picture of</em>, and a
+          different kind of model answers the second one.
+        </>
+      ),
+      specs: [
+        ["Trigger", <>Runs only when the classical score lands below <code>80</code>.</>],
+        ["Model", <>CLIP ViT-B/32 vision tower, int8 ONNX, 97 MB, producing a 512-dimensional embedding.</>],
+        ["Verdict", <>Cosine at or above <code>0.90</code> scores 90. At <code>0.82</code>, 82. At <code>0.75</code>, 76. Below that, cosine x 70.</>],
+      ],
+    },
+    simple: {
+      role: "Only if that fails",
+      name: "When there are no stars to mark",
+      caption: "what kind of sky, not which stars",
+      body: (
+        <>
+          Some skies are just haze. Nothing bright enough to mark, nothing to line
+          up, no shape to check. A plain white earbud case is that kind of sky.{" "}
+          <em>So the question stops being which points match and becomes what kind
+          of thing this is</em>, answered by how it looks overall rather than point
+          by point.
+        </>
+      ),
+    },
   },
 ];
 
@@ -662,31 +753,83 @@ function tierOf(score: number) {
   return { label: "Low", color: "#a4161a" };
 }
 
-function StageRow({ stage }: { stage: Stage }) {
+type Voice = "technical" | "simple";
+
+function StageRow({ stage, voice, index }: { stage: Stage; voice: Voice; index: number }) {
   const { ref, cls } = useReveal<HTMLElement>();
+  const v = voice === "technical" ? stage.technical : stage.simple;
+  const specs = voice === "technical" ? stage.technical.specs : null;
+
+  // Keying on the voice remounts the block, which restarts the swap
+  // animation. The stagger is capped: five stages at 55ms lands the last
+  // one at 220ms, so the wave reads as one gesture rather than a queue.
+  const delay = { animationDelay: `${Math.min(index, 4) * 55}ms` };
+
   return (
     <article ref={ref} className={`${styles.stage} ${cls}`}>
       <p className={styles.stageNum} data-numeric="">
         {stage.num}
       </p>
       <div className={styles.stageBody}>
-        <span className={styles.stageRole}>{stage.role}</span>
-        <h3 className={styles.stageName}>{stage.name}</h3>
-        <p className={styles.analogy}>{stage.analogy}</p>
-        <dl className={styles.specList}>
-          {stage.specs.map(([k, v]) => (
-            <div key={k} className={styles.specRow}>
-              <dt className={styles.specKey}>{k}</dt>
-              <dd className={styles.specVal}>{v}</dd>
-            </div>
-          ))}
-        </dl>
+        <div key={voice} className={styles.swap} style={delay}>
+          <span className={styles.stageRole}>{v.role}</span>
+          <h3 className={styles.stageName}>{v.name}</h3>
+          <p className={styles.analogy}>{v.body}</p>
+          {specs && (
+            <dl className={styles.specList}>
+              {specs.map(([k, val]) => (
+                <div key={k} className={styles.specRow}>
+                  <dt className={styles.specKey}>{k}</dt>
+                  <dd className={styles.specVal}>{val}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
       </div>
       <figure className={styles.stageDiagram}>
         {stage.diagram}
-        <figcaption className={styles.diagramCaption}>{stage.caption}</figcaption>
+        <figcaption key={voice} className={`${styles.diagramCaption} ${styles.swap}`} style={delay}>
+          {v.caption}
+        </figcaption>
       </figure>
     </article>
+  );
+}
+
+function VoiceToggle({ voice, onChange }: { voice: Voice; onChange: (v: Voice) => void }) {
+  const options: Array<{ id: Voice; label: string; hint: string }> = [
+    { id: "technical", label: "Technical", hint: "what the code does, with the numbers" },
+    { id: "simple", label: "Simple", hint: "the same five steps, as finding a constellation" },
+  ];
+  const activeIndex = options.findIndex((o) => o.id === voice);
+
+  return (
+    <div className={styles.toggleWrap}>
+      <div className={styles.toggle} role="group" aria-label="Explanation style">
+        {/* The indicator slides between the two, so the control shows where it
+            came from rather than blinking to a new place. */}
+        <span
+          className={styles.toggleIndicator}
+          style={{ transform: `translateX(${activeIndex * 100}%)` }}
+          aria-hidden="true"
+        />
+        {options.map((o) => (
+          <button
+            key={o.id}
+            type="button"
+            className={`${styles.toggleBtn} ${voice === o.id ? styles.toggleBtnOn : ""}`}
+            aria-pressed={voice === o.id}
+            onClick={() => onChange(o.id)}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+      <p key={voice} className={`${styles.toggleHint} ${styles.swap}`}>
+        {options[activeIndex].hint}
+      </p>
+    </div>
   );
 }
 
@@ -703,6 +846,7 @@ export default function Home() {
   const [results, setResults] = useState<MatchResult[] | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [tabVisible, setTabVisible] = useState(true);
+  const [voice, setVoice] = useState<Voice>("technical");
 
   useEffect(() => {
     const onVis = () => setTabVisible(!document.hidden);
@@ -944,16 +1088,27 @@ export default function Home() {
             <h2 id="how-it-decides" className={styles.inkTitle}>
               How it actually decides
             </h2>
-            <p className={styles.inkLede}>
-              Five stages, each one running only because the one before it did, and the last one only
-              when the fourth falls short. The specification on the left is what the code does. The
-              analogy beside it is there so the specification means something.
+            <p key={voice} className={`${styles.inkLede} ${styles.swap}`}>
+              {voice === "technical" ? (
+                <>
+                  Five stages, each one running only because the one before it did, and the last one
+                  only when the fourth falls short. The specification is what the code does. The
+                  analogy beside it is there so the specification means something.
+                </>
+              ) : (
+                <>
+                  Treat every photo as a patch of night sky. Deciding whether two items are the same
+                  item is the same problem as deciding whether two sketches show the same
+                  constellation, and it is solved the same way, in five steps.
+                </>
+              )}
             </p>
+            <VoiceToggle voice={voice} onChange={setVoice} />
           </div>
 
           <div className={styles.stageList}>
-            {STAGES.map((s) => (
-              <StageRow key={s.num} stage={s} />
+            {STAGES.map((s, i) => (
+              <StageRow key={s.num} stage={s} voice={voice} index={i} />
             ))}
           </div>
 
