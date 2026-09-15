@@ -349,7 +349,7 @@ def get_subject_mask(img_bgr):
 
 def _descriptor_cache_path(img_path):
     digest = hashlib.md5(img_path.encode()).hexdigest()
-    return os.path.join(DESCRIPTOR_CACHE_DIR, digest + ".npz")
+    return os.path.join(DESCRIPTOR_CACHE_DIR, digest + "_masked.npz")
 
 
 def load_cached_descriptors(img_path):
@@ -454,8 +454,9 @@ def _precompute_descriptors(img_path: str) -> dict:
     if img is None:
         return {"error": True, "message": "Image could not be read."}
     img = resize_to_max_dim(img)
+    mask = get_subject_mask(img)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    kp, des = SIFT.detectAndCompute(CLAHE.apply(gray), None)
+    kp, des = SIFT.detectAndCompute(CLAHE.apply(gray), mask)
     des = apply_rootsift(des)
     save_descriptors(img_path, kp, des)
     if CLIP_AVAILABLE:
@@ -472,14 +473,15 @@ def _score_item(item, img_target, h_target_norm, kp_t, des_t, clip_emb_t):
     if img_db_src is None:
         return None
     img_db = resize_to_max_dim(img_db_src)
+    mask_db = get_subject_mask(img_db)
 
-    h_db = cv2.calcHist([img_db], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
+    h_db = cv2.calcHist([img_db], [0, 1, 2], mask_db, [8, 8, 8], [0, 256, 0, 256, 0, 256])
     color_score = max(0.0, cv2.compareHist(h_target_norm, cv2.normalize(h_db, h_db), cv2.HISTCMP_CORREL)) * 100.0
 
     kp_db, des_db = load_cached_descriptors(db_img_path)
     if des_db is None:
         gray_db = cv2.cvtColor(img_db, cv2.COLOR_BGR2GRAY)
-        kp_db, des_db = SIFT.detectAndCompute(CLAHE.apply(gray_db), None)
+        kp_db, des_db = SIFT.detectAndCompute(CLAHE.apply(gray_db), mask_db)
         des_db = apply_rootsift(des_db)
         save_descriptors(db_img_path, kp_db, des_db)
 
@@ -564,7 +566,7 @@ def _process_batch(target_img_path: str, database_items: list) -> dict:
     h_target_norm = cv2.normalize(h_target, h_target)
 
     gray_t = cv2.cvtColor(img_target, cv2.COLOR_BGR2GRAY)
-    kp_t, des_t = SIFT.detectAndCompute(CLAHE.apply(gray_t), None)
+    kp_t, des_t = SIFT.detectAndCompute(CLAHE.apply(gray_t), mask_target)
     des_t = apply_rootsift(des_t)
     clip_emb_t = get_clip_embedding(target_img_path) if CLIP_AVAILABLE else None
 
