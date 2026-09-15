@@ -1,8 +1,18 @@
 /* ============================================================
    Styled after the real FEU-COMPASS design system
-   (resources/css/app.css in the production Laravel app) —
+   (resources/css/app.css in the production Laravel app):
    same brand tokens, card/badge/button language, ported to
    this standalone demo.
+
+   Two registers share one brand:
+
+   PRODUCT     light ground, FEU green, white cards. The tool
+               you use. Calm, scannable, campus-software calm.
+   ENGINE ROOM near-black ground, gold hairlines, monospace
+               reserved for real measurements. The machine you
+               inspect. The register shift is the signal that
+               you have crossed from using it to understanding
+               it.
    ============================================================ */
 
 :root {
@@ -12,12 +22,36 @@
 
   --surface-base: #f7f8fa;
   --surface-card: #ffffff;
+  --surface-sunk: #eef1f5;
+
+  --text-strong: #0b1220;
+  --text-body: #3d4a5c;
+  --text-mute: #5b6b7f;
+
+  --line-soft: #e3e8ee;
+  --line-firm: #cbd5e1;
 
   --ring-default: rgba(0, 0, 0, 0.08);
   --ring-medium: rgba(0, 0, 0, 0.12);
 
+  /* Engine-room register */
+  --ink: #070b0e;
+  --ink-raised: #0e151b;
+  --ink-line: rgba(255, 255, 255, 0.1);
+  --ink-gold-line: rgba(254, 203, 2, 0.28);
+  --ink-text: #eef3f7;
+  --ink-body: #b9c7d4;
+  --ink-mute: #8ea0b0;
+
   --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 18px 40px -12px rgba(11, 18, 32, 0.22), 0 6px 14px -8px rgba(11, 18, 32, 0.14);
+  --shadow-key: 0 22px 50px -16px rgba(0, 77, 50, 0.38), 0 8px 18px -10px rgba(0, 77, 50, 0.3);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  color-scheme: light;
+  accent-color: var(--feu-green);
 }
 
 * {
@@ -35,11 +69,88 @@ body {
 }
 
 body {
-  font-family: "Public Sans", sans-serif;
+  font-family: "Public Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   letter-spacing: -0.01em;
-  color: #0f172a;
+  color: var(--text-strong);
 }
 
 a {
   color: inherit;
+}
+
+/* ── Browser surfaces. These ship with defaults that belong to no
+      design system, so they get themed like everything else. ── */
+
+::selection {
+  background: var(--feu-gold);
+  color: #241d00;
+}
+
+:root {
+  caret-color: var(--feu-green);
+}
+
+:focus-visible {
+  outline: 2px solid var(--feu-green);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Inside the engine room the green ring disappears against near-black. */
+[data-register="ink"] ::selection {
+  background: var(--feu-gold);
+  color: #241d00;
+}
+
+[data-register="ink"] :focus-visible {
+  outline-color: var(--feu-gold);
+}
+
+html {
+  scrollbar-color: var(--line-firm) var(--surface-base);
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--line-firm);
+  border-radius: 999px;
+  border: 3px solid var(--surface-base);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9aa8b8;
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  font-feature-settings: "zero" 1;
+}
+
+/* Scores, counts and measurements are compared column-wise, so they
+   get tabular figures wherever they appear. */
+[data-numeric] {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

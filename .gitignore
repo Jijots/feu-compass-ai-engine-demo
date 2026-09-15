@@ -13,3 +13,6 @@ frontend/.next/
 frontend/out/
 frontend/.env.local
 
+
+# Local editor/agent scratch
+.claude/

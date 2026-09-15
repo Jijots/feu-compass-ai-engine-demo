@@ -2,7 +2,7 @@
 
 A standalone extraction of the visual + semantic matching engine from
 **FEU-COMPASS**, a Laravel-based campus lost-and-found and student-conduct
-system built for FEU Institute of Technology's Office of Student Discipline
+system built for FEU Manila's Office of Student Discipline
 and Guidance Counseling Office.
 
 In production this microservice runs alongside a Laravel front end that
