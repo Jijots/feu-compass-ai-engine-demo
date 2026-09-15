@@ -97,6 +97,19 @@ from the browser. Built with **React + TypeScript + Next.js** (App Router).
 The frontend talks to `http://127.0.0.1:8001` by default; see
 `frontend/.env.local.example` if you're running the backend somewhere else.
 
+## Live demo
+
+| | |
+|---|---|
+| Web UI | _pending_ |
+| API | _pending_ |
+
+Hosted on free tiers, so the first request after 15 minutes of inactivity
+wakes the container and takes about a minute to answer. Uploaded images are
+scored in memory and not retained.
+
+The hosted instance runs a reduced build. See "Hosting constraints" below.
+
 ## API reference
 
 | Endpoint | Method | Purpose |
@@ -106,6 +119,21 @@ The frontend talks to `http://127.0.0.1:8001` by default; see
 | `/match-upload` | POST | Same as `/match`, but takes real multipart file uploads — what the web UI calls |
 | `/precompute` | POST | Pre-compute and cache SIFT/CLIP descriptors for an image ahead of time |
 | `/semantic` | POST | 3-tier identity match for a presented document against a list of known students |
+
+## Hosting constraints
+
+The public demo runs on a 512MB instance, which the full PyTorch build does
+not fit inside: the Linux torch wheel alone is 554MB, and CLIP ViT-B/32 in
+fp32 is a further 605MB of weights. The original service had no such ceiling,
+it ran on Azure App Service.
+
+So the deployed build installs `requirements-deploy.txt` rather than
+`requirements.txt`. Everything still runs: `/match` keeps the full SIFT,
+RootSIFT, RANSAC and colour-histogram pipeline, and `/semantic` keeps all
+three tiers. `/health` reports exactly which optional features are live on
+any given instance, so the demo never claims a capability it is not running.
+
+Run `requirements.txt` locally for the unabridged engine.
 
 ## What's deliberately not in this repo
 

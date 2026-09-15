@@ -1,0 +1,21 @@
+# Deployment subset of requirements.txt, used by the Dockerfile.
+#
+# Deliberately excludes torch + open-clip-torch. The CLIP fallback needs about
+# 600MB of RAM just for the ViT-B-32 weights in fp32, plus ~300MB for the torch
+# runtime. Render's free and Starter instances are both capped at 512MB, so CLIP
+# cannot load there at all. app/server.py already degrades gracefully: without
+# torch installed, CLIP_AVAILABLE is False and /match runs SIFT + RANSAC +
+# colour-histogram only, while /semantic keeps Tiers 1-3.
+#
+# For the full engine including CLIP, install requirements.txt on a box with at
+# least 2GB of RAM.
+fastapi
+uvicorn[standard]
+opencv-python-headless
+numpy
+pytesseract
+Pillow
+google-genai
+python-dotenv
+requests
+python-multipart

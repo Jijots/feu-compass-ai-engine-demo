@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: feu-compass-ai-engine
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Optional. Only enables the Tier 3 Gemini Vision fallback in /semantic.
+      # Left unset here on purpose - set it in the Render dashboard if you want
+      # it, never commit a value. sync:false means "prompt me, don't store it
+      # in this file".
+      - key: GOOGLE_API_KEY
+        sync: false

@@ -1,8 +1,8 @@
-# FEU-COMPASS AI Engine — Hugging Face Spaces (Docker SDK)
+# FEU-COMPASS AI Engine, container image for Render (Docker runtime).
 FROM python:3.11-slim
 
 # System deps: tesseract-ocr (pytesseract is just a wrapper around the real
-# binary — it does nothing without this), plus the shared libs OpenCV needs
+# binary, and it does nothing without this), plus the shared libs OpenCV needs
 # that aren't in the slim base image.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
@@ -12,13 +12,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# requirements-deploy.txt, not requirements.txt: the deploy set leaves out
+# torch/open-clip-torch, which do not fit in Render's 512MB instances. See the
+# comments in that file.
+COPY requirements-deploy.txt .
+RUN pip install --no-cache-dir -r requirements-deploy.txt
 
 COPY app/ ./app/
 
-# Spaces' Docker SDK expects the app to listen on 7860 by default.
-ENV PORT=7860
-EXPOSE 7860
+# Render injects PORT at runtime; 10000 is its default and the local fallback.
+ENV PORT=10000
+EXPOSE 10000
 
-CMD ["uvicorn", "app.server:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["sh", "-c", "exec uvicorn app.server:app --host 0.0.0.0 --port ${PORT:-10000} --workers 1"]

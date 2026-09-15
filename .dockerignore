@@ -1,0 +1,12 @@
+.git/
+.github/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.cache/
+demo/
+frontend/
+README.md
+.env
+.env.example
