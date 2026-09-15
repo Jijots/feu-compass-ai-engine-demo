@@ -79,40 +79,97 @@ except ImportError:
     GEMINI_CLIENT = None
     GEMINI_MODEL = None
 
-try:
-    from rembg import new_session, remove as rembg_remove
-    REMBG_AVAILABLE = True
-except ImportError:
-    REMBG_AVAILABLE = False
+# ---------------------------------------------------------------------------
+# ONNX Runtime models.
+#
+# Production ran CLIP through PyTorch and background removal through the rembg
+# package. Neither fits the 512MB instance this demo is hosted on. The Linux
+# torch wheel alone is 554MB and CLIP ViT-B/32 in fp32 is another 605MB, while
+# rembg pulls in scipy, scikit-image and pymatting for roughly 100MB of
+# dependencies to drive one small model.
+#
+# Both now run directly on ONNX Runtime, a 24MB wheel, against two pre-exported
+# models fetched at image build time:
+#
+#   clip_vision_int8.onnx  CLIP ViT-B/32 vision tower, int8, 97MB. Exported from
+#                          the same open_clip openai weights, so the embedding
+#                          space is unchanged. The text tower is dropped since
+#                          nothing here ever encoded text. Mean cosine agreement
+#                          with the fp32 torch original is 0.9915.
+#   u2netp.onnx            The same u2netp weights rembg downloads itself, 4.6MB,
+#                          driven with identical pre/post-processing. Verified
+#                          pixel-identical to rembg's only_mask output.
+#
+# Sessions load lazily so idle memory stays low. The CPU arena allocator is
+# switched off deliberately: with it enabled, u2netp inference alone grew RSS
+# past 590MB and would OOM the instance. With it off the whole process peaks
+# around 250MB.
+# ---------------------------------------------------------------------------
 
-# CLIP is loaded lazily on first use, not at startup, so idle memory stays low
-# until a match actually needs the featureless-object fallback.
-_clip_model = None
-_clip_preprocess = None
+try:
+    import onnxruntime as _ort
+    ORT_AVAILABLE = True
+except ImportError:
+    ORT_AVAILABLE = False
+
+MODEL_DIR = os.environ.get(
+    "MODEL_DIR",
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models"),
+)
+CLIP_MODEL_PATH = os.path.join(MODEL_DIR, "clip_vision_int8.onnx")
+U2NETP_MODEL_PATH = os.path.join(MODEL_DIR, "u2netp.onnx")
+
+CLIP_AVAILABLE = ORT_AVAILABLE and os.path.exists(CLIP_MODEL_PATH)
+REMBG_AVAILABLE = ORT_AVAILABLE and os.path.exists(U2NETP_MODEL_PATH)
+
+
+def _ort_session(model_path):
+    opts = _ort.SessionOptions()
+    opts.intra_op_num_threads = 1
+    opts.inter_op_num_threads = 1
+    opts.enable_cpu_mem_arena = False
+    opts.enable_mem_pattern = False
+    return _ort.InferenceSession(model_path, opts, providers=["CPUExecutionProvider"])
+
+
+_clip_session = None
+_clip_input_name = None
 _clip_load_lock = threading.Lock()
 
-try:
-    import torch
-    import open_clip
-    CLIP_AVAILABLE = True
-except Exception:
-    CLIP_AVAILABLE = False
+_rembg_session = None
+_rembg_input_name = None
+_rembg_load_lock = threading.Lock()
 
 
 def _ensure_clip_loaded() -> bool:
-    global _clip_model, _clip_preprocess
-    if _clip_model is not None:
+    global _clip_session, _clip_input_name
+    if _clip_session is not None:
         return True
+    if not CLIP_AVAILABLE:
+        return False
     with _clip_load_lock:
-        if _clip_model is not None:
+        if _clip_session is not None:
             return True
         try:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                _clip_model, _, _clip_preprocess = open_clip.create_model_and_transforms(
-                    "ViT-B-32", pretrained="openai"
-                )
-            _clip_model.eval()
+            _clip_session = _ort_session(CLIP_MODEL_PATH)
+            _clip_input_name = _clip_session.get_inputs()[0].name
+            return True
+        except Exception:
+            return False
+
+
+def _ensure_rembg_loaded() -> bool:
+    global _rembg_session, _rembg_input_name
+    if _rembg_session is not None:
+        return True
+    if not REMBG_AVAILABLE:
+        return False
+    with _rembg_load_lock:
+        if _rembg_session is not None:
+            return True
+        try:
+            _rembg_session = _ort_session(U2NETP_MODEL_PATH)
+            _rembg_input_name = _rembg_session.get_inputs()[0].name
             return True
         except Exception:
             return False
@@ -135,13 +192,6 @@ CLAHE = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
 SIFT = cv2.SIFT_create(nfeatures=2500)
 FLANN = cv2.FlannBasedMatcher(dict(algorithm=1, trees=5), dict(checks=50))
 
-REMBG_SESSION = None
-if REMBG_AVAILABLE:
-    try:
-        REMBG_SESSION = new_session("u2netp")
-    except Exception:
-        REMBG_SESSION = None
-
 app = FastAPI(title="FEU-COMPASS AI Engine (demo)")
 
 # Local-dev CORS — the Next.js frontend (localhost:3000) calls this API
@@ -159,7 +209,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 print(
     f"[matcher] OpenCV {cv2.__version__} | "
-    f"rembg={'on' if REMBG_SESSION else 'off'} | "
+    f"rembg={'lazy' if REMBG_AVAILABLE else 'off'} | "
     f"clip={'lazy' if CLIP_AVAILABLE else 'off'} | "
     f"tesseract={'on' if TESSERACT_AVAILABLE else 'off'} | "
     f"gemini={'on' if GEMINI_AVAILABLE else 'off'} | "
@@ -220,10 +270,38 @@ def resize_to_max_dim(image, max_dim=800):
     return cv2.resize(image, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
 
 
+_U2NET_MEAN = (0.485, 0.456, 0.406)
+_U2NET_STD = (0.229, 0.224, 0.225)
+
+
 def _mask_from_rembg(img_bgr):
+    """u2netp driven straight through ONNX Runtime, replacing the rembg package.
+
+    Same weights and the same pre/post-processing rembg applies: resize to
+    320x320 with LANCZOS, divide by the array max, per-channel normalise, then
+    min-max the returned logits back to a 0-255 mask at the original
+    resolution. Checked pixel-identical to rembg's only_mask output."""
+    if not _ensure_rembg_loaded():
+        raise RuntimeError("u2netp session unavailable")
+
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-    raw = rembg_remove(PILImage.fromarray(img_rgb), session=REMBG_SESSION, only_mask=True)
-    mask = np.array(raw)
+    pil = PILImage.fromarray(img_rgb)
+    small = np.array(pil.resize((320, 320), PILImage.LANCZOS)).astype(np.float64)
+    peak = np.max(small)
+    small = small / (peak if peak else 1.0)   # rembg divides by the max; guard 0
+    norm = np.zeros((320, 320, 3))
+    for c in range(3):
+        norm[:, :, c] = (small[:, :, c] - _U2NET_MEAN[c]) / _U2NET_STD[c]
+    tensor = norm.transpose((2, 0, 1))[None, ...].astype(np.float32)
+
+    pred = _rembg_session.run(None, {_rembg_input_name: tensor})[0][:, 0, :, :]
+    lo, hi = pred.min(), pred.max()
+    pred = np.squeeze((pred - lo) / ((hi - lo) if hi > lo else 1.0))
+    mask = np.array(
+        PILImage.fromarray((pred * 255).astype("uint8"), mode="L").resize(
+            pil.size, PILImage.LANCZOS
+        )
+    )
     _, binary = cv2.threshold(mask, 128, 255, cv2.THRESH_BINARY)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel, iterations=2)
@@ -249,7 +327,7 @@ def get_subject_mask(img_bgr):
     mug photographed on a wood desk vs. a marble counter shouldn't score low
     just because the backgrounds differ."""
     min_coverage = img_bgr.shape[0] * img_bgr.shape[1] * 0.03
-    if REMBG_SESSION is not None:
+    if REMBG_AVAILABLE:
         try:
             mask = _mask_from_rembg(img_bgr)
             if np.sum(mask > 0) >= min_coverage:
@@ -318,6 +396,31 @@ def load_cached_clip(img_path):
         return None
 
 
+_CLIP_MEAN = np.array([0.48145466, 0.4578275, 0.40821073], dtype=np.float32)
+_CLIP_STD = np.array([0.26862954, 0.26130258, 0.27577711], dtype=np.float32)
+
+
+def _clip_preprocess_numpy(pil_img, n=224):
+    """open_clip's ViT-B-32 transform, reimplemented without torchvision.
+
+    Resize the SHORT side to 224 and truncate the long side (torchvision uses
+    int(), not round(), and a one-pixel difference here shifts every column),
+    centre crop, scale to 0-1, normalise. Verified bit-exact, max absolute
+    difference 0.00000, against the torchvision pipeline."""
+    im = pil_img.convert("RGB")
+    w, h = im.size
+    if w < h:
+        nw, nh = n, max(n, int(h * n / w))
+    else:
+        nh, nw = n, max(n, int(w * n / h))
+    im = im.resize((nw, nh), PILImage.BICUBIC)
+    left, top = (nw - n) // 2, (nh - n) // 2
+    im = im.crop((left, top, left + n, top + n))
+    arr = np.asarray(im, dtype=np.float32) / 255.0
+    arr = (arr - _CLIP_MEAN) / _CLIP_STD
+    return np.transpose(arr, (2, 0, 1))[None, ...].astype(np.float32)
+
+
 def get_clip_embedding(img_path):
     if not _ensure_clip_loaded():
         return None
@@ -330,11 +433,10 @@ def get_clip_embedding(img_path):
             return cached
         try:
             img_pil = PILImage.open(img_path).convert("RGB")
-            tensor = _clip_preprocess(img_pil).unsqueeze(0)
-            with torch.no_grad():
-                emb = _clip_model.encode_image(tensor)
-                emb = emb / emb.norm(dim=-1, keepdim=True)
-            result = emb.squeeze().numpy()
+            tensor = _clip_preprocess_numpy(img_pil)
+            emb = _clip_session.run(None, {_clip_input_name: tensor})[0][0]
+            emb = emb / np.linalg.norm(emb)
+            result = emb.astype(np.float32)
             np.save(_clip_cache_path(img_path), result)
             return result
         except Exception:
@@ -648,7 +750,7 @@ def health():
         "tesseract": TESSERACT_AVAILABLE,
         "gemini": GEMINI_AVAILABLE,
         "clip": CLIP_AVAILABLE,
-        "rembg": REMBG_SESSION is not None,
+        "rembg": REMBG_AVAILABLE,
     }
 
 

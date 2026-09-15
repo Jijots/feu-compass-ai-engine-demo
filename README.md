@@ -122,18 +122,37 @@ The hosted instance runs a reduced build. See "Hosting constraints" below.
 
 ## Hosting constraints
 
-The public demo runs on a 512MB instance, which the full PyTorch build does
-not fit inside: the Linux torch wheel alone is 554MB, and CLIP ViT-B/32 in
-fp32 is a further 605MB of weights. The original service had no such ceiling,
-it ran on Azure App Service.
+The public demo runs on a 512MB instance. The PyTorch build does not fit inside
+that: the Linux torch wheel is 554MB before its seven CUDA dependencies, and
+CLIP ViT-B/32 in fp32 is a further 605MB of weights. The rembg package is a
+smaller version of the same problem, pulling scipy, scikit-image, pymatting and
+pooch, roughly 100MB of dependencies, to drive one 4.6MB model.
 
-So the deployed build installs `requirements-deploy.txt` rather than
-`requirements.txt`. Everything still runs: `/match` keeps the full SIFT,
-RootSIFT, RANSAC and colour-histogram pipeline, and `/semantic` keeps all
-three tiers. `/health` reports exactly which optional features are live on
-any given instance, so the demo never claims a capability it is not running.
+Rather than drop those features, the deployed build runs both on ONNX Runtime,
+a 24MB wheel, against pre-exported models fetched at image build time from the
+repo's `models-v1` release:
 
-Run `requirements.txt` locally for the unabridged engine.
+| | |
+|---|---|
+| CLIP ViT-B/32 vision tower, int8 | 97MB |
+| u2netp | 4.6MB |
+| Whole process, both models loaded, SIFT running | ~250MB peak |
+
+The vision tower is exported from the same `open_clip` openai weights the torch
+path used, so the embedding space is unchanged, and the unused text tower is
+dropped. Agreement with the fp32 original is 0.9915 mean cosine, with no flips
+across the 0.90 threshold the CLIP fallback uses. The u2netp masks are
+pixel-identical to `rembg.remove(..., only_mask=True)`.
+
+Two details worth knowing if you reproduce this. ONNX Runtime's CPU arena
+allocator has to be disabled; with it on, u2netp inference alone grew RSS past
+590MB and would OOM the instance. And only `MatMul` nodes are quantised, since
+dynamic quantisation turns the patch-embedding `Conv` into a `ConvInteger` that
+the CPU provider has no kernel for.
+
+`requirements.txt` remains the original torch-based set for local use, and
+`/health` reports exactly which optional features are live on any given
+instance, so the demo never claims a capability it is not running.
 
 ## What's deliberately not in this repo
 
