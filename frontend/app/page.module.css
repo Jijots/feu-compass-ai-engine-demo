@@ -963,6 +963,7 @@
 }
 
 .scanRow {
+  position: relative;
   display: grid;
   grid-template-columns: 2.25rem minmax(0, 1fr);
   gap: 0.75rem;
@@ -987,23 +988,52 @@
   line-height: 1.4;
 }
 
+/* The gold wash rides its own layer rather than the row background.
+   Animating background-color repaints the row on every frame of an infinite
+   loop; animating opacity composites instead. */
+.scanRow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: rgba(254, 203, 2, 0.1);
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* The sweep. One material idea: a pass of attention travelling the
    pipeline, each row lighting as it goes by. 3.5s cycle, 0.7s apart. */
 .scanning .scanRow {
   animation: scanPass 3.5s linear infinite;
 }
 
-.scanning .scanRow:nth-child(1) { animation-delay: 0s; }
-.scanning .scanRow:nth-child(2) { animation-delay: 0.7s; }
-.scanning .scanRow:nth-child(3) { animation-delay: 1.4s; }
-.scanning .scanRow:nth-child(4) { animation-delay: 2.1s; }
-.scanning .scanRow:nth-child(5) { animation-delay: 2.8s; }
+.scanning .scanRow::before {
+  animation: scanFlash 3.5s linear infinite;
+}
+
+.scanning .scanRow:nth-child(1),
+.scanning .scanRow:nth-child(1)::before { animation-delay: 0s; }
+.scanning .scanRow:nth-child(2),
+.scanning .scanRow:nth-child(2)::before { animation-delay: 0.7s; }
+.scanning .scanRow:nth-child(3),
+.scanning .scanRow:nth-child(3)::before { animation-delay: 1.4s; }
+.scanning .scanRow:nth-child(4),
+.scanning .scanRow:nth-child(4)::before { animation-delay: 2.1s; }
+.scanning .scanRow:nth-child(5),
+.scanning .scanRow:nth-child(5)::before { animation-delay: 2.8s; }
 
 @keyframes scanPass {
-  0% { opacity: 0.32; background: transparent; }
-  6% { opacity: 1; background: rgba(254, 203, 2, 0.1); }
-  20% { opacity: 0.6; background: transparent; }
-  100% { opacity: 0.32; background: transparent; }
+  0% { opacity: 0.32; }
+  6% { opacity: 1; }
+  20% { opacity: 0.6; }
+  100% { opacity: 0.32; }
+}
+
+@keyframes scanFlash {
+  0% { opacity: 0; }
+  6% { opacity: 1; }
+  20% { opacity: 0; }
+  100% { opacity: 0; }
 }
 
 /* A hairline riding down the list, tying the row flashes together. */
@@ -1050,6 +1080,7 @@
 /* Paused when the tab is hidden or the card is scrolled away: a loop
    nobody is looking at is wasted battery. */
 .scanPaused .scanRow,
+.scanPaused .scanRow::before,
 .scanPaused .scanBeam,
 .scanPaused .pulse::after {
   animation-play-state: paused;
@@ -1165,14 +1196,23 @@
    takes its start from the element's current style, which is how the stage
    entrance came to animate nothing at all. */
 .swap {
-  animation: swapIn 0.55s var(--ease-out) backwards;
+  animation: swapIn 0.5s var(--ease-out) backwards;
+}
+
+/* Blur is the one genuinely expensive property here and its cost climbs fast
+   with radius, so 4px does the same job as 7px for a fraction of the work.
+   The layer hint is added for the duration of the animation and removed on
+   animationend, because leaving will-change on five large text blocks keeps
+   five compositor layers alive for a transition that lasts half a second. */
+.swapAnimating {
+  will-change: opacity, filter, transform;
 }
 
 @keyframes swapIn {
   from {
     opacity: 0;
-    filter: blur(7px);
-    transform: translateY(7px);
+    filter: blur(4px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;

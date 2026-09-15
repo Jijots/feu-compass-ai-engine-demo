@@ -173,7 +173,34 @@ function useReveal<T extends HTMLElement>() {
 
   const cls =
     state === "armed" ? styles.revealArmed : state === "in" ? styles.revealIn : styles.reveal;
-  return { ref, cls };
+  return { ref, cls, state };
+}
+
+/* Wraps content that swaps between voices. The layer hint lives only while
+   the animation runs: five large text blocks holding will-change forever
+   would keep five compositor layers alive for a half-second transition. */
+function Swap({
+  children,
+  delayMs,
+  animate,
+}: {
+  children: React.ReactNode;
+  delayMs: number;
+  animate: boolean;
+}) {
+  const [running, setRunning] = useState(true);
+  if (!animate) return <div>{children}</div>;
+  return (
+    <div
+      className={`${styles.swap} ${running ? styles.swapAnimating : ""}`}
+      style={{ animationDelay: `${delayMs}ms` }}
+      onAnimationEnd={(e) => {
+        if (e.target === e.currentTarget) setRunning(false);
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 /* A looping animation nobody can see is wasted battery, so the scan runs
@@ -756,7 +783,11 @@ function tierOf(score: number) {
 type Voice = "technical" | "simple";
 
 function StageRow({ stage, voice, index }: { stage: Stage; voice: Voice; index: number }) {
-  const { ref, cls } = useReveal<HTMLElement>();
+  const { ref, cls, state } = useReveal<HTMLElement>();
+  // A stage still waiting below the fold has nothing to show yet, so it swaps
+  // instantly. Toggling from the top of the section would otherwise run five
+  // simultaneous blurs for four stages nobody is looking at.
+  const animateSwap = state !== "armed";
   const v = voice === "technical" ? stage.technical : stage.simple;
   const specs = voice === "technical" ? stage.technical.specs : null;
 
@@ -771,7 +802,7 @@ function StageRow({ stage, voice, index }: { stage: Stage; voice: Voice; index: 
         {stage.num}
       </p>
       <div className={styles.stageBody}>
-        <div key={voice} className={styles.swap} style={delay}>
+        <Swap key={voice} delayMs={Math.min(index, 4) * 55} animate={animateSwap}>
           <span className={styles.stageRole}>{v.role}</span>
           <h3 className={styles.stageName}>{v.name}</h3>
           <p className={styles.analogy}>{v.body}</p>
@@ -785,11 +816,15 @@ function StageRow({ stage, voice, index }: { stage: Stage; voice: Voice; index: 
               ))}
             </dl>
           )}
-        </div>
+        </Swap>
       </div>
       <figure className={styles.stageDiagram}>
         {stage.diagram}
-        <figcaption key={voice} className={`${styles.diagramCaption} ${styles.swap}`} style={delay}>
+        <figcaption
+          key={voice}
+          className={`${styles.diagramCaption} ${animateSwap ? styles.swap : ""}`}
+          style={animateSwap ? delay : undefined}
+        >
           {v.caption}
         </figcaption>
       </figure>
