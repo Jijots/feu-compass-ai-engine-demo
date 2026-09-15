@@ -50,6 +50,10 @@
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
+  /* Instrument Serif ships a single 400 weight, so anything set in the
+     display role emphasises with italic and size, never with weight. */
+  --display-stack: var(--font-display), ui-serif, Georgia, "Times New Roman", serif;
+
   color-scheme: light;
   accent-color: var(--feu-green);
 }
@@ -69,8 +73,8 @@ body {
 }
 
 body {
-  font-family: "Public Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  letter-spacing: -0.01em;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: -0.005em;
   color: var(--text-strong);
 }
 
@@ -134,7 +138,7 @@ code,
 kbd,
 samp,
 pre {
-  font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: var(--font-mono), ui-monospace, "SF Mono", Menlo, monospace;
   font-feature-settings: "zero" 1;
 }
 

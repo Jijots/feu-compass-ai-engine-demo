@@ -20,10 +20,11 @@
 }
 
 .title {
-  font-size: clamp(2.75rem, 7.5vw, 5.25rem);
-  font-weight: 900;
-  letter-spacing: -0.04em;
-  line-height: 0.94;
+  font-family: var(--display-stack);
+  font-size: clamp(3rem, 8vw, 5.75rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1;
   color: var(--text-strong);
   margin: 0;
   text-wrap: balance;
@@ -37,15 +38,17 @@
   isolation: isolate;
 }
 
-/* The brand's one flourish: a gold marker stroke sitting on the
-   baseline, drawn rather than dropped in as decoration. */
+/* The brand's one flourish: a gold marker stroke under the accented word.
+   Instrument Serif drops its "y" 0.2075em below the baseline, which ends
+   0.098em above this box's bottom edge, so the rule is tucked below that
+   to clear the descender instead of cutting through it. */
 .titleAccent::after {
   content: "";
   position: absolute;
   left: -0.04em;
   right: -0.04em;
-  bottom: 0.055em;
-  height: 0.11em;
+  bottom: -0.015em;
+  height: 0.07em;
   background: var(--feu-gold);
   z-index: -1;
 }
@@ -481,7 +484,7 @@
 }
 
 .filename {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 0.78125rem;
   font-weight: 500;
   color: var(--text-body);
@@ -575,10 +578,11 @@
 }
 
 .inkTitle {
-  font-size: clamp(2rem, 5vw, 3.5rem);
-  font-weight: 900;
-  letter-spacing: -0.04em;
-  line-height: 1.02;
+  font-family: var(--display-stack);
+  font-size: clamp(2.25rem, 5.5vw, 3.875rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.04;
   margin: 0;
   color: var(--ink-text);
   text-wrap: balance;
@@ -642,12 +646,12 @@
 }
 
 .stageNum {
-  font-size: clamp(2.25rem, 4.5vw, 3.25rem);
-  font-weight: 900;
-  letter-spacing: -0.06em;
-  line-height: 0.85;
-  color: transparent;
-  -webkit-text-stroke: 1.5px var(--ink-mute);
+  font-family: var(--display-stack);
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 0.9;
+  color: var(--ink-mute);
   margin: 0;
 }
 
@@ -656,10 +660,11 @@
 }
 
 .stageName {
-  font-size: clamp(1.25rem, 2.2vw, 1.625rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.12;
+  font-family: var(--display-stack);
+  font-size: clamp(1.375rem, 2.5vw, 1.875rem);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.14;
   margin: 0 0 0.875rem;
   color: var(--ink-text);
 }
@@ -676,17 +681,20 @@
 
 /* Analogy first: it is the handhold that makes the spec readable. */
 .analogy {
-  font-size: 1rem;
-  line-height: 1.6;
+  font-family: var(--display-stack);
+  font-size: 1.1875rem;
+  line-height: 1.55;
+  letter-spacing: 0.005em;
   color: var(--ink-body);
-  margin: 0 0 1.125rem;
-  max-width: 54ch;
+  margin: 0 0 1.25rem;
+  max-width: 50ch;
 }
 
+/* Instrument Serif has no bold, and synthesised bold on a high-contrast
+   serif is visibly broken, so emphasis is carried by its real italic. */
 .analogy em {
   color: var(--ink-text);
-  font-style: normal;
-  font-weight: 700;
+  font-style: italic;
 }
 
 .specList {
@@ -713,7 +721,7 @@
 }
 
 .specKey {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 0.6875rem;
   font-weight: 500;
   text-transform: uppercase;
@@ -754,7 +762,7 @@
 }
 
 .diagramCaption {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 0.6875rem;
   line-height: 1.5;
   color: var(--ink-mute);
@@ -803,9 +811,10 @@
 }
 
 .costTitle {
-  font-size: clamp(1.375rem, 3vw, 2rem);
-  font-weight: 900;
-  letter-spacing: -0.035em;
+  font-family: var(--display-stack);
+  font-size: clamp(1.625rem, 3.4vw, 2.375rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
   margin: 0 0 0.875rem;
   color: var(--ink-text);
   text-wrap: balance;
@@ -851,7 +860,7 @@
 }
 
 .costKey {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 0.6875rem;
   font-weight: 500;
   text-transform: uppercase;

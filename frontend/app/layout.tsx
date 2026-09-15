@@ -1,5 +1,35 @@
 import type { Metadata } from "next";
+import { Archivo, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+
+/* Three faces, three jobs, self-hosted by next/font so there is no external
+   request and no swap flash.
+
+   Instrument Serif  the written voice: headlines, section titles, and the
+                     analogy prose that explains the machine in human terms.
+                     Ships 400 only, so emphasis is italic, never bold.
+   Archivo           the working voice: every label, control, and value.
+   JetBrains Mono    the machine voice: measurements, filenames, code. */
+
+const display = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const sans = Archivo({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "FEU-COMPASS AI Engine — Demo",
@@ -9,17 +39,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Public Sans carries the brand. JetBrains Mono is loaded only for
-            real measurements and code, never as a "technical" costume. */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
       <body>{children}</body>
     </html>
   );
