@@ -138,6 +138,120 @@ function useReveal<T extends HTMLElement>() {
   return { ref, cls };
 }
 
+/* A looping animation nobody can see is wasted battery, so the scan runs
+   only while its card is on screen and the tab is in front. */
+function useMotionActive<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [onScreen, setOnScreen] = useState(true);
+  const [tabVisible, setTabVisible] = useState(true);
+
+  useEffect(() => {
+    const onVis = () => setTabVisible(!document.hidden);
+    onVis();
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setOnScreen(entry.isIntersecting),
+      { threshold: 0.05 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  return { ref, active: onScreen && tabVisible };
+}
+
+/* The five stages, in the words the engine room uses, shortened to scan. */
+const SCAN_STEPS = [
+  "Levelling scale and exposure",
+  "Cutting the subject from its background",
+  "Reading keypoints, building descriptors",
+  "Matching, then verifying the geometry",
+  "Falling back to meaning when geometry is thin",
+];
+
+function PipelineScanner() {
+  const { ref, active } = useMotionActive<HTMLElement>();
+  const listRef = useRef<HTMLUListElement>(null);
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const started = performance.now();
+    const id = window.setInterval(
+      () => setElapsed(Math.floor((performance.now() - started) / 1000)),
+      1000,
+    );
+    return () => window.clearInterval(id);
+  }, []);
+
+  // The beam travels the real height of the list, so it stays in step with
+  // the rows at any breakpoint instead of against a hardcoded distance.
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const measure = () =>
+      el.style.setProperty("--beam-travel", `${Math.round(el.getBoundingClientRect().height)}px`);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <section
+      ref={ref}
+      className={`${styles.scanner} ${styles.scanning} ${active ? "" : styles.scanPaused}`}
+      data-motion="essential"
+      role="status"
+    >
+      {/* One stable sentence for screen readers. The looping rows below are
+          decorative and would otherwise be announced over and over. */}
+      <p className={styles.srOnly}>
+        Scoring the registry. This usually takes six to fifteen seconds.
+      </p>
+
+      <div aria-hidden="true">
+        <div className={styles.scannerHead}>
+          <h2 className={styles.scannerTitle}>Working through the pipeline</h2>
+          <span className={styles.scannerElapsed} data-numeric="">
+            {elapsed}s elapsed
+          </span>
+        </div>
+
+        <div className={styles.scanTrack}>
+          <span className={styles.scanBeam} />
+          <ul ref={listRef} className={styles.scanList}>
+            {SCAN_STEPS.map((label, i) => (
+              <li key={label} className={styles.scanRow}>
+                <span className={styles.scanIndex}>{String(i + 1).padStart(2, "0")}</span>
+                <span className={styles.scanLabel}>{label}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className={styles.scannerFoot}>
+          These are the stages the engine runs, not a live progress report. The
+          server does not report which one it is on, so this loops rather than
+          pretending to know.
+        </p>
+
+        {elapsed >= 20 && (
+          <p className={styles.scannerWake}>
+            Still going. The engine sleeps after 15 minutes idle and takes about a
+            minute to wake, so a first request can run long.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /* ── Stage diagrams. Each one draws the mechanism it describes. ─── */
 
 const GOLD = "#fecb02";
@@ -550,6 +664,14 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<MatchResult[] | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [tabVisible, setTabVisible] = useState(true);
+
+  useEffect(() => {
+    const onVis = () => setTabVisible(!document.hidden);
+    onVis();
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
 
   useEffect(() => {
     fetch(`${API_BASE}/health`)
@@ -611,7 +733,7 @@ export default function Home() {
     : [];
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${tabVisible ? "" : styles.scanPaused}`}>
       <header className={styles.shell}>
         <div className={styles.hero}>
           <h1 className={styles.title}>
@@ -696,7 +818,7 @@ export default function Home() {
               <span className={styles.btnInner}>
                 {loading ? (
                   <>
-                    <span className={styles.spinner} aria-hidden="true" />
+                    <span className={styles.spinner} data-motion="essential" aria-hidden="true" />
                     Scoring the registry
                   </>
                 ) : (
@@ -715,6 +837,8 @@ export default function Home() {
             )}
           </form>
         </section>
+
+        {loading && <PipelineScanner />}
 
         {results && (
           <section className={styles.results} aria-live="polite">

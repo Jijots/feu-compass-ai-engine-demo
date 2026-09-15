@@ -148,13 +148,22 @@ pre {
   font-variant-numeric: tabular-nums;
 }
 
+/* Reduced motion means fewer and gentler animations, not none. Anything
+   marked data-motion="essential" is exempt, because it is the only signal
+   that a request is still in flight, and a request here can run 15 seconds.
+   Those exempt animations are authored to use opacity and colour only, with
+   no spatial movement, so they stay honest to the preference. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *:not([data-motion="essential"]):not([data-motion="essential"] *),
+  *:not([data-motion="essential"]):not([data-motion="essential"] *)::before,
+  *:not([data-motion="essential"]):not([data-motion="essential"] *)::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  html {
+    scroll-behavior: auto;
   }
 }
