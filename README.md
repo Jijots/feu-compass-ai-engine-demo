@@ -101,8 +101,8 @@ The frontend talks to `http://127.0.0.1:8001` by default; see
 
 | | |
 |---|---|
-| Web UI | _pending_ |
-| API | _pending_ |
+| Web UI | https://feu-compass-ai-demo.vercel.app |
+| API | https://feu-compass-ai-engine-z8ve.onrender.com |
 
 Hosted on free tiers, so the first request after 15 minutes of inactivity
 wakes the container and takes about a minute to answer. Uploaded images are
