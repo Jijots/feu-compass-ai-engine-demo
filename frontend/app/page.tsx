@@ -105,32 +105,70 @@ function useReveal<T extends HTMLElement>() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     setState("armed");
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setState("in");
-            io.disconnect();
-          }
-        }
-      },
-      { threshold: 0.12, rootMargin: "0px 0px -10% 0px" },
-    );
-    io.observe(el);
 
-    // Armed stages sit at opacity 0 until they intersect. If the observer
-    // never fires (bfcache restore, a browser that throttles it, a stage
-    // that never quite clears the threshold) that content would be gone for
-    // good, so an entrance effect is never allowed to outlive this timer.
-    const failsafe = window.setTimeout(() => {
-      setState("in");
-      io.disconnect();
-    }, 2500);
+    // An armed stage sits at opacity 0 until it arrives, so whatever triggers
+    // it has to be dependable, or the content is simply gone. Observation is
+    // the preferred trigger but not the only one: if the observer has said
+    // nothing at all after a short grace period, a measured check takes over.
+    //
+    // The earlier version used a plain 2.5s timer instead, which fired while
+    // every stage was still far below the fold and spent each entrance where
+    // nobody could see it.
+    let done = false;
+    let io: IntersectionObserver | undefined;
+    let poll: number | undefined;
+    let graceTimer: number | undefined;
 
-    return () => {
-      io.disconnect();
-      window.clearTimeout(failsafe);
+    const cleanup = () => {
+      io?.disconnect();
+      if (poll !== undefined) window.clearInterval(poll);
+      if (graceTimer !== undefined) window.clearTimeout(graceTimer);
     };
+
+    const reveal = () => {
+      if (done) return;
+      done = true;
+      cleanup();
+      setState("in");
+    };
+
+    const inView = () => {
+      const rect = el.getBoundingClientRect();
+      const h = window.innerHeight || document.documentElement.clientHeight;
+      return rect.top < h * 0.9 && rect.bottom > 0;
+    };
+
+    // Deliberately a timer rather than a scroll listener. Scroll events are
+    // frame-driven too, so a fallback built on them fails in exactly the same
+    // conditions that silence the observer. Half a second is imperceptible
+    // for an entrance and costs one rect measurement per stage until it
+    // fires, after which it stops.
+    const startPollingFallback = () => {
+      const check = () => {
+        if (inView()) reveal();
+      };
+      poll = window.setInterval(check, 500);
+      check();
+    };
+
+    if (typeof IntersectionObserver !== "undefined") {
+      let heard = false;
+      io = new IntersectionObserver(
+        (entries) => {
+          heard = true;
+          for (const entry of entries) if (entry.isIntersecting) reveal();
+        },
+        { threshold: 0.12, rootMargin: "0px 0px -10% 0px" },
+      );
+      io.observe(el);
+      graceTimer = window.setTimeout(() => {
+        if (!heard && !done) startPollingFallback();
+      }, 1200);
+    } else {
+      startPollingFallback();
+    }
+
+    return cleanup;
   }, []);
 
   const cls =
