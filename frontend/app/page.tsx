@@ -784,6 +784,7 @@ type Voice = "technical" | "simple";
 
 function StageRow({ stage, voice, index }: { stage: Stage; voice: Voice; index: number }) {
   const { ref, cls, state } = useReveal<HTMLElement>();
+  const [settled, setSettled] = useState(false);
   // A stage still waiting below the fold has nothing to show yet, so it swaps
   // instantly. Toggling from the top of the section would otherwise run five
   // simultaneous blurs for four stages nobody is looking at.
@@ -797,7 +798,15 @@ function StageRow({ stage, voice, index }: { stage: Stage; voice: Voice; index: 
   const delay = { animationDelay: `${Math.min(index, 4) * 55}ms` };
 
   return (
-    <article ref={ref} className={`${styles.stage} ${cls}`}>
+    <article
+      ref={ref}
+      className={`${styles.stage} ${cls} ${settled ? styles.revealSettled : ""}`}
+      onAnimationEnd={(e) => {
+        // Only the entrance, which runs on the article itself. The swap and
+        // the traces are descendants and bubble through here too.
+        if (e.target === e.currentTarget) setSettled(true);
+      }}
+    >
       <p className={styles.stageNum} data-numeric="">
         {stage.num}
       </p>

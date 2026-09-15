@@ -770,24 +770,31 @@
   text-align: center;
 }
 
-/* One authored moment: stages resolve as they enter. The default
-   state is fully visible, so this never hides content without JS. */
-.reveal > * {
+/* The stage arrives as one element rather than three staggered children.
+   That is a third of the animations, and it reads better: the rule, the
+   numeral and the diagram now land together instead of the gold rule sitting
+   there waiting while its own contents catch up. The default state is fully
+   visible, so this never hides content without JS. */
+.reveal {
   opacity: 1;
 }
 
-.revealArmed > * {
+.revealArmed {
   opacity: 0;
   transform: translateY(14px);
+  will-change: opacity, transform;
 }
 
-.revealIn > * {
-  animation: stageIn 0.85s var(--ease-out) forwards;
+.revealIn {
+  animation: stageIn 0.55s var(--ease-out) forwards;
+  will-change: opacity, transform;
 }
 
-.revealIn > *:nth-child(1) { animation-delay: 0ms; }
-.revealIn > *:nth-child(2) { animation-delay: 90ms; }
-.revealIn > *:nth-child(3) { animation-delay: 180ms; }
+/* Dropped once the entrance is over, so five stages do not hold five
+   compositor layers for the rest of the session. */
+.revealSettled {
+  will-change: auto;
+}
 
 /* Both ends are explicit on purpose. With only a to-block the browser takes
    the start value from the element's current style, and by the time this
@@ -798,9 +805,12 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* The drawn paths trace themselves once their stage arrives. */
+/* The drawn paths trace themselves once their stage has arrived. Held back
+   until the entrance is done: stroke-dashoffset is the only per-frame repaint
+   in the section, and stacking it under a transform made the arrival stutter
+   on stage 04, which traces four lines at once. */
 .revealIn .traced {
-  animation: trace 1.5s var(--ease-out) forwards;
+  animation: trace 1s var(--ease-out) 0.25s forwards;
 }
 
 @keyframes trace {

@@ -531,11 +531,11 @@ def _score_item(item, img_target, h_target_norm, kp_t, des_t, clip_emb_t):
         if clip_emb_db is not None:
             cosine = float(np.dot(clip_emb_t, clip_emb_db))
             if cosine >= 0.90:
-                clip_score, clip_msg = 90.0, "Strong semantic match. Items are visually very similar."
+                clip_score, clip_msg = 90.0, "Strong match on overall appearance, not on shared detail."
             elif cosine >= 0.82:
-                clip_score, clip_msg = 82.0, "Good semantic match. Items share strong visual characteristics."
+                clip_score, clip_msg = 82.0, "Good match on overall appearance, not on shared detail."
             elif cosine >= 0.75:
-                clip_score, clip_msg = 76.0, "Possible semantic match. Items appear visually similar."
+                clip_score, clip_msg = 76.0, "Possible match on overall appearance. No shared detail was confirmed."
             else:
                 clip_score, clip_msg = cosine * 70.0, ""
             if clip_score > final_score:
