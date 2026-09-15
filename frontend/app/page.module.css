@@ -9,14 +9,32 @@
 
 .shell {
   width: 100%;
-  max-width: 1080px;
+  max-width: 1140px;
   margin: 0 auto;
   padding: 0 1.5rem;
 }
 
-/* ── Hero ── */
+/* ── Hero ──
+   A masthead, not a stack. Left as a single column the title wrapped at
+   15ch and left the entire right half of the head empty down to the card,
+   which read as a gap rather than as space. The title and the supporting
+   text now sit side by side and share a baseline, so the emptiness becomes
+   the margin around a composition instead of a hole in one. */
 .hero {
-  padding: clamp(3.5rem, 9vw, 6.5rem) 0 clamp(2.5rem, 5vw, 3.75rem);
+  padding: clamp(2.25rem, 5vw, 4rem) 0 clamp(2.5rem, 5vw, 3.75rem);
+}
+
+@media (min-width: 880px) {
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    column-gap: clamp(2.5rem, 5vw, 4.5rem);
+    align-items: end;
+  }
+}
+
+.heroAside {
+  min-width: 0;
 }
 
 .title {
@@ -28,7 +46,13 @@
   color: var(--text-strong);
   margin: 0;
   text-wrap: balance;
-  max-width: 15ch;
+  max-width: 11ch;
+}
+
+@media (min-width: 880px) {
+  .title {
+    max-width: none;
+  }
 }
 
 .titleAccent {
@@ -61,6 +85,16 @@
   max-width: 64ch;
 }
 
+@media (min-width: 880px) {
+  .lede {
+    margin-top: 0;
+    /* Two columns cost the prose its measure. A step down in size buys the
+       characters back without touching the column split, which the display
+       type needs to stay wide enough to hold its line breaks. */
+    font-size: 1.0625rem;
+  }
+}
+
 .lede strong {
   color: var(--text-strong);
   font-weight: 700;
@@ -80,6 +114,12 @@
   box-shadow: var(--shadow-sm);
   width: fit-content;
   max-width: 100%;
+}
+
+@media (min-width: 880px) {
+  .status {
+    margin-top: 1.5rem;
+  }
 }
 
 .statusLead {

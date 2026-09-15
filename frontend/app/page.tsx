@@ -965,6 +965,7 @@ export default function Home() {
           <h1 className={styles.title}>
             Find the one that is <span className={styles.titleAccent}>yours</span>.
           </h1>
+          <div className={styles.heroAside}>
           <p className={styles.lede}>
             The visual matching engine from <strong>FEU-COMPASS</strong>, a lost-and-found system
             built for two offices at FEU Manila, lifted out of the main application
@@ -1007,6 +1008,7 @@ export default function Home() {
               </div>
             </div>
           )}
+          </div>
         </div>
       </header>
 
